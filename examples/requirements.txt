@@ -1,0 +1,6 @@
+# api_loop.py — pinned to the same fastapi/uvicorn/httpx as backend/requirements.txt
+fastapi==0.137.1
+uvicorn==0.49.0
+httpx==0.28.1
+# MCP client (tools). Optional: without it the loop still chats, just without tools.
+mcp>=1.10

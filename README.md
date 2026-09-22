@@ -47,7 +47,7 @@ AI 侧默认以 **Claude Code 的 channel 插件**形态运行——你在手机
 | [`backend/`](backend/) | 你的 VPS | relay 后端（FastAPI + sqlite）。落库 + SSE 扇出 + 可选 TTS/推送 | [backend/DEPLOY.md](backend/DEPLOY.md) |
 | [`channel/`](channel/) | 你的电脑 | Claude Code channel 插件（Bun + MCP）。把消息变成 CC 会话里的 `<channel>` 块 | [channel/DEPLOY.md](channel/DEPLOY.md) |
 | [`web/`](web/) | 你的 VPS（静态） | 手机 PWA（单文件 `index.html`，无构建）。装到主屏就是独立 App | [web/DEPLOY.md](web/DEPLOY.md) |
-| [`examples/api_loop.py`](examples/api_loop.py) | 你的 VPS（可选） | 服务器常驻 OpenAI-compatible API loop；PWA 可在 Desktop / API 间切换 | [examples/.env.example](examples/.env.example) |
+| [`examples/api_loop.py`](examples/api_loop.py) | 你的 VPS（可选） | 服务器常驻 API 身体：任意 OpenAI-compatible 模型 + 看图 + MCP 多步工具 + 附件收发 + 人格热加载；PWA 可在 Desktop / API 间切换 | [examples/README.md](examples/README.md) |
 
 **这是一套 Claude Code 一站式方案**：AI 的「大脑」就是你本地的 Claude Code，channel 插件是它的嘴和耳朵，relay 是中转，PWA 是你手里的对讲机。三件套都在这个仓库里，互相用同一把 `RELAY_SECRET` 对认。
 
@@ -109,20 +109,29 @@ claude --dangerously-load-development-channels server:companion
 
 ---
 
-## Path C · 服务器 API loop（可选）
+## Path C · 服务器 API 身体（可选）
 
-现在也可以让 VPS 上常驻一个 API 身体：PWA 发消息 → relay 落库 → relay 根据 `/app/brain` 开关把消息交给 Desktop channel 或 API loop。前端顶栏有「API 窗口」切换多会话，设置页「联系 Claude」可在 Desktop / API 间切换；API 回复支持 `reply_delta` 流式草稿。
+VPS 上常驻一个 API 身体：PWA 发消息 → relay 落库 → relay 根据 `/app/brain` 开关把消息交给 Desktop channel 或 `examples/api_loop.py`。它是一具完整的身体，不只是「调一下 chat/completions」：
+
+- **模型**：任意 OpenAI-compatible 端点，一条主模型 + 兜底链（401/403/429/5xx 自动往下切），全部在 PWA 设置页填、保存、一键测试，不用碰 `.env`。
+- **上文**：同窗口最近 N 条历史（设置页可调），最近几张图重新发像素，其余只留文件名。
+- **附件**：你发的图直接喂给多模态模型；小文本文件内联；其它文件留本地副本给工具读。模型也能把文件发回来（`attach_file` 工具 / MCP 工具返回的图片）。
+- **工具**：接任意 MCP server（stdio 或 streamable-http），工具变成 function calling，多步调用自动循环，每一步在聊天里显示为可展开的「act」小卡。
+- **人格**：system prompt 是一个文件，设置页里直接改、保存即热加载；用编辑器改文件也一样，不重启。
+- 流式输出（`reply_delta`）、多窗口 `api_session`、reasoning 模型的思考流都照常。
 
 最短路径：
 
 ```bash
 cd /root/companion-channel/examples
-cp .env.example .env
-# 填 RELAY_URL=http://127.0.0.1:3011、RELAY_SECRET、RELAY_DB、LLM_API_BASE/KEY/MODEL、PERSONA 或 PERSONA_FILE
+pip install -r requirements.txt          # fastapi / uvicorn / httpx / mcp
+cp .env.example .env                     # 只需 RELAY_URL / RELAY_SECRET / RELAY_DB / RELAY_UPLOAD_DIR
 python3 api_loop.py
 ```
 
-另一个终端把 relay 切到 API：
+然后在手机 PWA 的设置页：「联系 Claude」切到 **API** → 「API · 模型」填 url / model / key → **保存并测试** → 看到 `✓ 回了「pong」` 就能聊了。想要工具，「API · MCP 工具」加一行（先拿仓库自带的 `mcp_demo_server.py` 试：`python3` + `mcp_demo_server.py`），人格在「API · 人格设定」里改。
+
+命令行切换 relay 也行：
 
 ```bash
 curl -s -X POST http://127.0.0.1:3011/app/brain \
@@ -131,7 +140,7 @@ curl -s -X POST http://127.0.0.1:3011/app/brain \
   -d '{"target":"loop"}'
 ```
 
-常驻服务模板见 [`examples/companion-api-loop.service`](examples/companion-api-loop.service)。同一时刻只让一个身体接消息：`desktop` 走 Claude Code channel，`loop` 走 `examples/api_loop.py`。
+常驻服务模板见 [`examples/companion-api-loop.service`](examples/companion-api-loop.service)，细节与排错见 [`examples/README.md`](examples/README.md)。同一时刻只让一个身体接消息：`desktop` 走 Claude Code channel，`loop` 走 `examples/api_loop.py`。
 
 ---
 
@@ -174,6 +183,7 @@ const USE_MOCK  = false;      // ← 改成 true 可零后端先看 UI（自带�
 | 选 | `GET /app/vapid_public` · `POST /app/subscribe` · `/app/unsubscribe` | Web Push 锁屏推送 |
 | 选 | `GET/POST /app/brain` | `{target:"desktop"|"loop"}`，切 Desktop channel / API loop |
 | 选 | `GET/POST/PATCH /app/sessions` | API 多窗口：session 列表、新建、激活、改名 |
+| 选 | `GET/POST/PATCH/DELETE /app/loop/{path}` | 透传到 API 身体的 `/loop/{path}`：`config` `persona` `mcp` `tools` `test`（设置页用；同一把 secret） |
 
 **消息形状**：`from` 只有 `"human"`（你）和 `"ai"`（AI）两种；`kind` 常见 `reply / user / thinking / act / voice / call`；`text` 是正文；`meta` 放附件、reactions 等。
 

@@ -1039,6 +1039,38 @@
     color: var(--text-faint); letter-spacing:.01em;
   }
 
+  /* ── API loop cards(模型链 / 上文 / 人格 / MCP)── */
+  .loop-rows{ display:flex; flex-direction:column; gap:8px; }
+  .loop-row{ display:grid; grid-template-columns: 1fr auto; gap:6px; align-items:start; }
+  .loop-row .loop-inputs{ display:grid; gap:6px; min-width:0; }
+  .loop-field{ display:flex; flex-direction:column; gap:4px; font-size:11.5px; color: var(--text-faint); min-width:0; }
+  .loop-field.wide{ grid-column: 1 / -1; }
+  .loop-field input, .loop-field select, .loop-textarea, .loop-row input{
+    width:100%; box-sizing:border-box; border:1px solid var(--card-line); border-radius:10px;
+    background: var(--seg-track); color: var(--text); font: inherit; font-size:13px;
+    padding:8px 10px; outline:none; -webkit-appearance:none; appearance:none;
+  }
+  .loop-field input:focus, .loop-field select:focus, .loop-textarea:focus, .loop-row input:focus{ border-color: var(--slider-thumb); }
+  .loop-textarea{ resize:vertical; min-height:130px; line-height:1.5; font-size:12.5px; }
+  .loop-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:8px; }
+  .loop-actions{ display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .loop-btn{
+    border:1px solid var(--card-line); background: var(--seg-track); color: var(--text-soft);
+    border-radius:10px; padding:7px 12px; font: inherit; font-size:12.5px; cursor:pointer; white-space:nowrap;
+  }
+  .loop-btn.primary{ background: var(--seg-thumb); color: var(--text); box-shadow: var(--seg-thumb-shadow); font-weight:500; }
+  .loop-btn.danger{ color:#c0392b; }
+  .loop-btn:disabled{ opacity:.55; cursor:default; }
+  .loop-row-del{ align-self:center; padding:7px 9px; }
+  .loop-mcp-item{ display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--card-line); border-radius:10px; background: var(--seg-track); }
+  .loop-mcp-item .mcp-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .loop-mcp-item .mcp-name{ font-size:13px; color: var(--text); }
+  .loop-mcp-item .mcp-meta{ font-size:11px; color: var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .loop-mcp-item .loop-btn{ padding:5px 8px; font-size:11.5px; }
+  .mcp-dot{ width:8px; height:8px; border-radius:50%; background:#b8b8b8; flex:none; }
+  .mcp-dot.online{ background:#3cb371; } .mcp-dot.error{ background:#e0553d; } .mcp-dot.connecting{ background:#e8b23a; }
+  .loop-mcp-form{ margin-top:10px; }
+
   /* segmented control */
   .segmented{
     display:grid; grid-auto-flow:column; grid-auto-columns:1fr;
@@ -1980,6 +2012,56 @@
         <div class="push-hint" id="brainHint"></div>
       </section>
 
+      <!-- API loop · 模型链 -->
+      <section class="settings-card loop-card">
+        <div class="settings-label">API · 模型 <i class="info-i" title="OpenAI-compatible 端点。第一行是主模型，后面是兜底链：主模型 401/403/429/5xx 时自动往下切。key 只在保存时上传，回显永远打码。">i</i></div>
+        <div class="loop-rows" id="loopChainRows"></div>
+        <div class="loop-actions">
+          <button type="button" class="loop-btn" id="loopChainAdd">+ 添加一行</button>
+          <button type="button" class="loop-btn primary" id="loopChainSave">保存</button>
+          <button type="button" class="loop-btn" id="loopChainTest">保存并测试</button>
+        </div>
+        <div class="push-hint" id="loopChainHint"></div>
+      </section>
+
+      <!-- API loop · 上文 / 工具步数 -->
+      <section class="settings-card loop-card">
+        <div class="settings-label">API · 上文与工具 <i class="info-i" title="上文条数：每条消息喂给模型的同窗口历史条数。历史图片：其中最近几张图重新发像素（其余只留文件名）。工具步数：一条消息里最多连续调用工具的轮数。看图：关掉则图片只以文件名出现。">i</i></div>
+        <div class="loop-grid">
+          <label class="loop-field"><span>上文条数</span><input id="loopHistoryN" type="number" min="0" max="200" inputmode="numeric"></label>
+          <label class="loop-field"><span>历史图片</span><input id="loopHistoryImages" type="number" min="0" max="20" inputmode="numeric"></label>
+          <label class="loop-field"><span>工具步数</span><input id="loopToolSteps" type="number" min="0" max="50" inputmode="numeric"></label>
+          <label class="loop-field"><span>看图</span><select id="loopVision"><option value="auto">自动</option><option value="on">开</option><option value="off">关</option></select></label>
+        </div>
+        <div class="loop-actions"><button type="button" class="loop-btn primary" id="loopContextSave">保存</button></div>
+        <div class="push-hint" id="loopContextHint"></div>
+      </section>
+
+      <!-- API loop · 人格设定 -->
+      <section class="settings-card loop-card">
+        <div class="settings-label">API · 人格设定 <i class="info-i" title="模型的 system prompt。保存即生效，下一条消息就用新的；直接改服务器上的文件也会被热加载，不用重启。">i</i></div>
+        <textarea id="loopPersona" class="loop-textarea" rows="8" spellcheck="false" placeholder="写给模型的人设……"></textarea>
+        <div class="loop-actions"><button type="button" class="loop-btn primary" id="loopPersonaSave">保存并热加载</button></div>
+        <div class="push-hint" id="loopPersonaHint"></div>
+      </section>
+
+      <!-- API loop · MCP -->
+      <section class="settings-card loop-card">
+        <div class="settings-label">API · MCP 工具 <i class="info-i" title="连上的 MCP server 的工具会作为 function calling 交给模型，多步调用自动循环。stdio：服务器上的本机命令；http：streamable-http 地址。">i</i></div>
+        <div class="loop-rows" id="loopMcpList"></div>
+        <div class="loop-grid loop-mcp-form">
+          <label class="loop-field"><span>名字</span><input id="loopMcpName" type="text" placeholder="demo" autocapitalize="off" autocomplete="off"></label>
+          <label class="loop-field"><span>类型</span><select id="loopMcpTransport"><option value="stdio">stdio</option><option value="http">http</option></select></label>
+          <label class="loop-field loop-mcp-stdio wide"><span>命令</span><input id="loopMcpCommand" type="text" placeholder="python3" autocapitalize="off" autocomplete="off"></label>
+          <label class="loop-field loop-mcp-stdio wide"><span>参数（空格分隔）</span><input id="loopMcpArgs" type="text" placeholder="mcp_demo_server.py" autocapitalize="off" autocomplete="off"></label>
+          <label class="loop-field loop-mcp-stdio wide"><span>env（JSON，可空）</span><input id="loopMcpEnv" type="text" placeholder='{"API_KEY":"..."}' autocapitalize="off" autocomplete="off"></label>
+          <label class="loop-field loop-mcp-http wide hidden"><span>URL</span><input id="loopMcpUrl" type="url" placeholder="https://host/mcp" autocapitalize="off" autocomplete="off"></label>
+          <label class="loop-field loop-mcp-http wide hidden"><span>headers（JSON，可空）</span><input id="loopMcpHeaders" type="text" placeholder='{"Authorization":"Bearer ..."}' autocapitalize="off" autocomplete="off"></label>
+        </div>
+        <div class="loop-actions"><button type="button" class="loop-btn primary" id="loopMcpAdd">添加 / 更新并连接</button></div>
+        <div class="push-hint" id="loopMcpHint"></div>
+      </section>
+
       <!-- 模型选择（占位 · 假按键，以后接真切换）-->
       <section class="settings-card">
         <div class="settings-label">模型选择</div>
@@ -2379,6 +2461,7 @@ function openProfile(){
   // double rAF so the slide-in runs from the off-screen state
   requestAnimationFrame(() => requestAnimationFrame(() => profilePanel.classList.add("open")));
   refreshContextStatus();
+  loadLoopSettings();
 }
 function closeProfile(){
   if (!profilePanel) return;
@@ -3200,6 +3283,205 @@ if (brainSeg){
     if (b) saveBrain(b.dataset.val);
   });
 }
+
+/* ════════ API loop 设置(模型链 / 上文 / 人格 / MCP)— 全部经 relay 的 /app/loop/* 透传 ════════ */
+const loopEls = {
+  chainRows: $("#loopChainRows"), chainAdd: $("#loopChainAdd"), chainSave: $("#loopChainSave"), chainTest: $("#loopChainTest"), chainHint: $("#loopChainHint"),
+  historyN: $("#loopHistoryN"), historyImages: $("#loopHistoryImages"), toolSteps: $("#loopToolSteps"), vision: $("#loopVision"),
+  contextSave: $("#loopContextSave"), contextHint: $("#loopContextHint"),
+  persona: $("#loopPersona"), personaSave: $("#loopPersonaSave"), personaHint: $("#loopPersonaHint"),
+  mcpList: $("#loopMcpList"), mcpName: $("#loopMcpName"), mcpTransport: $("#loopMcpTransport"), mcpCommand: $("#loopMcpCommand"),
+  mcpArgs: $("#loopMcpArgs"), mcpEnv: $("#loopMcpEnv"), mcpUrl: $("#loopMcpUrl"), mcpHeaders: $("#loopMcpHeaders"), mcpAdd: $("#loopMcpAdd"), mcpHint: $("#loopMcpHint"),
+};
+let loopChain = [];   // [{index, url, model, key_masked, key?}] — index = 服务器上的原位置,-1 表示新行
+
+async function loopApi(path, method = "GET", body){
+  const headers = { ...authHeaders() };
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  const r = await fetch(`${API_BASE}/app/loop/${path}`, { method, headers, body: body !== undefined ? JSON.stringify(body) : undefined });
+  let data = null;
+  try{ data = await r.json(); }catch(_){ data = null; }
+  if (!r.ok){
+    const d = data && (data.detail || data.error);
+    throw new Error(d ? (typeof d === "string" ? d : JSON.stringify(d)) : ("HTTP " + r.status));
+  }
+  return data;
+}
+
+function renderLoopChain(){
+  if (!loopEls.chainRows) return;
+  if (!loopChain.length){
+    loopEls.chainRows.innerHTML = `<div class="push-hint">还没有模型。点「添加一行」,填 url / model / key。</div>`;
+    return;
+  }
+  loopEls.chainRows.innerHTML = loopChain.map((r, i) => `
+    <div class="loop-row" data-i="${i}">
+      <div class="loop-inputs">
+        <input type="url" data-k="url" value="${escapeHtml(r.url || "")}" placeholder="https://api.deepseek.com/v1" autocapitalize="off" autocomplete="off" spellcheck="false">
+        <input type="text" data-k="model" value="${escapeHtml(r.model || "")}" placeholder="deepseek-chat" autocapitalize="off" autocomplete="off" spellcheck="false">
+        <input type="password" data-k="key" value="${escapeHtml(r.key || "")}" placeholder="${escapeHtml(r.key_masked ? ("key 已保存 " + r.key_masked + " (留空不改)") : "sk-...")}" autocapitalize="off" autocomplete="off">
+      </div>
+      <button type="button" class="loop-btn danger loop-row-del" data-del="${i}" aria-label="删除这一行">✕</button>
+    </div>`).join("");
+}
+function applyLoopConfig(cfg){
+  loopChain = Array.isArray(cfg.main_chain) ? cfg.main_chain.map((r, i) => ({ ...r, index: r.index != null ? r.index : i })) : [];
+  renderLoopChain();
+  if (loopEls.chainHint) loopEls.chainHint.textContent = cfg.main_chain_source === "env"
+    ? "当前用的是 .env 里的 LLM_* 配置;在这里保存后以这里为准。"
+    : (loopChain.length ? `${loopChain.length} 个模型,第一行主用。` : "");
+  if (loopEls.historyN) loopEls.historyN.value = cfg.history_n ?? 24;
+  if (loopEls.historyImages) loopEls.historyImages.value = cfg.history_images ?? 2;
+  if (loopEls.toolSteps) loopEls.toolSteps.value = cfg.max_tool_steps ?? 8;
+  if (loopEls.vision) loopEls.vision.value = cfg.vision || "auto";
+  if (loopEls.contextHint) loopEls.contextHint.textContent =
+    `当前 ${Array.isArray(cfg.tools) ? cfg.tools.length : 0} 个工具可用` + (cfg.mcp_available === false ? "(MCP SDK 未装:pip install mcp)" : "");
+  renderLoopMcp(cfg.mcp_servers || []);
+}
+function renderLoopMcp(servers){
+  if (!loopEls.mcpList) return;
+  loopEls.mcpList._servers = servers;
+  if (!servers.length){ loopEls.mcpList.innerHTML = `<div class="push-hint">还没有 MCP server。下面填一个,比如仓库自带的 mcp_demo_server.py。</div>`; return; }
+  loopEls.mcpList.innerHTML = servers.map((s) => {
+    const where = s.transport === "http" ? (s.url || "") : [s.command].concat(s.args || []).join(" ");
+    const state = s.status || "offline";
+    const meta = `${s.transport} · ${state}${s.tools && s.tools.length ? ` · ${s.tools.length} 个工具` : ""}${s.error ? " · " + s.error : ""}`;
+    return `<div class="loop-mcp-item">
+      <span class="mcp-dot ${escapeHtml(state)}"></span>
+      <span class="mcp-main"><span class="mcp-name">${escapeHtml(s.name)}</span><span class="mcp-meta" title="${escapeHtml(where)}">${escapeHtml(meta)}</span></span>
+      <button type="button" class="loop-btn" data-mcp-edit="${escapeHtml(s.name)}">改</button>
+      <button type="button" class="loop-btn" data-mcp-reconnect="${escapeHtml(s.name)}">重连</button>
+      <button type="button" class="loop-btn danger" data-mcp-del="${escapeHtml(s.name)}" aria-label="删除">✕</button>
+    </div>`;
+  }).join("");
+}
+async function loadLoopSettings(){
+  if (USE_MOCK || !secret || !loopEls.chainRows) return;
+  try{
+    applyLoopConfig(await loopApi("config"));
+  }catch(err){
+    if (loopEls.chainHint) loopEls.chainHint.textContent = "API loop 没连上:" + err.message + "(api_loop.py 没在跑?)";
+    return;
+  }
+  try{
+    const p = await loopApi("persona");
+    if (loopEls.persona && document.activeElement !== loopEls.persona) loopEls.persona.value = p.text || "";
+    if (loopEls.personaHint) loopEls.personaHint.textContent = p.source === "file"
+      ? `文件:${p.path}${p.mtime ? " · " + new Date(p.mtime).toLocaleString() : ""}`
+      : (p.source === "env" ? "来自 .env 的 PERSONA;保存后会写成文件。" : "默认人设;保存后会写成 persona.md。");
+  }catch(_){}
+}
+if (loopEls.chainRows){
+  loopEls.chainRows.addEventListener("input", (e) => {
+    const inp = e.target.closest("input[data-k]"); if (!inp) return;
+    const i = Number(inp.closest(".loop-row").dataset.i);
+    if (loopChain[i]) loopChain[i][inp.dataset.k] = inp.value;
+  });
+  loopEls.chainRows.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-del]"); if (!b) return;
+    loopChain.splice(Number(b.dataset.del), 1);
+    renderLoopChain();
+  });
+}
+if (loopEls.chainAdd) loopEls.chainAdd.addEventListener("click", () => {
+  loopChain.push({ index:-1, url:"", model:"", key:"", key_masked:"" });
+  renderLoopChain();
+  const first = loopEls.chainRows.querySelector(".loop-row:last-child input");
+  if (first) first.focus();
+});
+async function saveLoopChain(){
+  const rows = loopChain.map((r) => {
+    const o = { index: r.index, url: (r.url || "").trim(), model: (r.model || "").trim() };
+    if (r.key) o.key = r.key.trim();
+    return o;
+  });
+  for (const r of rows){
+    if (!r.url || !r.model || (!r.key && r.index < 0)) throw new Error("每一行都要填 url / model / key");
+  }
+  applyLoopConfig(await loopApi("config", "POST", { main_chain: rows }));
+}
+if (loopEls.chainSave) loopEls.chainSave.addEventListener("click", async () => {
+  try{ await saveLoopChain(); showToast("模型已保存"); }
+  catch(err){ showToast("保存失败:" + err.message); }
+});
+if (loopEls.chainTest) loopEls.chainTest.addEventListener("click", async () => {
+  loopEls.chainTest.disabled = true;
+  if (loopEls.chainHint) loopEls.chainHint.textContent = "保存并测试中…";
+  try{
+    await saveLoopChain();
+    const r = await loopApi("test", "POST", { index: 0 });
+    loopEls.chainHint.textContent = r.ok
+      ? `✓ ${r.model} 回了「${String(r.reply || "").slice(0, 40)}」· ${r.latency_ms} ms`
+      : `✗ ${r.model}:${r.error}`;
+  }catch(err){ if (loopEls.chainHint) loopEls.chainHint.textContent = "✗ " + err.message; }
+  finally{ loopEls.chainTest.disabled = false; }
+});
+if (loopEls.contextSave) loopEls.contextSave.addEventListener("click", async () => {
+  try{
+    applyLoopConfig(await loopApi("config", "POST", {
+      history_n: Number(loopEls.historyN.value), history_images: Number(loopEls.historyImages.value),
+      max_tool_steps: Number(loopEls.toolSteps.value), vision: loopEls.vision.value,
+    }));
+    showToast("已保存");
+  }catch(err){ showToast("保存失败:" + err.message); }
+});
+if (loopEls.personaSave) loopEls.personaSave.addEventListener("click", async () => {
+  loopEls.personaSave.disabled = true;
+  try{
+    const p = await loopApi("persona", "POST", { text: loopEls.persona.value });
+    if (loopEls.personaHint) loopEls.personaHint.textContent = `已热加载 · ${p.chars} 字 · ${p.path}`;
+    showToast("人格已生效");
+  }catch(err){ showToast("保存失败:" + err.message); }
+  finally{ loopEls.personaSave.disabled = false; }
+});
+function syncMcpTransport(){
+  const http = loopEls.mcpTransport && loopEls.mcpTransport.value === "http";
+  document.querySelectorAll(".loop-mcp-stdio").forEach((el) => el.classList.toggle("hidden", http));
+  document.querySelectorAll(".loop-mcp-http").forEach((el) => el.classList.toggle("hidden", !http));
+}
+if (loopEls.mcpTransport) loopEls.mcpTransport.addEventListener("change", syncMcpTransport);
+if (loopEls.mcpAdd) loopEls.mcpAdd.addEventListener("click", async () => {
+  const body = { name: loopEls.mcpName.value.trim(), transport: loopEls.mcpTransport.value };
+  if (body.transport === "http"){ body.url = loopEls.mcpUrl.value.trim(); body.headers = loopEls.mcpHeaders.value.trim(); }
+  else { body.command = loopEls.mcpCommand.value.trim(); body.args = loopEls.mcpArgs.value.trim(); body.env = loopEls.mcpEnv.value.trim(); }
+  loopEls.mcpAdd.disabled = true;
+  if (loopEls.mcpHint) loopEls.mcpHint.textContent = "连接中…";
+  try{
+    const r = await loopApi("mcp", "POST", body);
+    renderLoopMcp(r.servers || []);
+    const sv = r.server || {};
+    loopEls.mcpHint.textContent = sv.status === "online" ? `✓ ${sv.name} 在线,${(sv.tools || []).length} 个工具` : `✗ ${sv.name}:${sv.status} ${sv.error || ""}`;
+    try{ applyLoopConfig(await loopApi("config")); }catch(_){}
+  }catch(err){ if (loopEls.mcpHint) loopEls.mcpHint.textContent = "✗ " + err.message; }
+  finally{ loopEls.mcpAdd.disabled = false; }
+});
+if (loopEls.mcpList) loopEls.mcpList.addEventListener("click", async (e) => {
+  const b = e.target.closest("button[data-mcp-edit],button[data-mcp-reconnect],button[data-mcp-del]");
+  if (!b) return;
+  const servers = loopEls.mcpList._servers || [];
+  if (b.dataset.mcpEdit){
+    const sv = servers.find((x) => x.name === b.dataset.mcpEdit); if (!sv) return;
+    loopEls.mcpName.value = sv.name; loopEls.mcpTransport.value = sv.transport; syncMcpTransport();
+    loopEls.mcpCommand.value = sv.command || ""; loopEls.mcpArgs.value = (sv.args || []).join(" ");
+    loopEls.mcpEnv.value = sv.env && Object.keys(sv.env).length ? JSON.stringify(sv.env) : "";
+    loopEls.mcpUrl.value = sv.url || ""; loopEls.mcpHeaders.value = sv.headers && Object.keys(sv.headers).length ? JSON.stringify(sv.headers) : "";
+    loopEls.mcpName.focus();
+    return;
+  }
+  b.disabled = true;
+  try{
+    if (b.dataset.mcpReconnect){
+      const r = await loopApi(`mcp/${encodeURIComponent(b.dataset.mcpReconnect)}/reconnect`, "POST", {});
+      showToast(r.ok ? "已重连" : "重连失败:" + ((r.server || {}).error || ""));
+    }else if (b.dataset.mcpDel){
+      if (!window.confirm(`删除 MCP server「${b.dataset.mcpDel}」?`)) return;
+      await loopApi(`mcp/${encodeURIComponent(b.dataset.mcpDel)}`, "DELETE");
+      showToast("已删除");
+    }
+    applyLoopConfig(await loopApi("config"));
+  }catch(err){ showToast("失败:" + err.message); }
+  finally{ b.disabled = false; }
+});
 
 function shortSid(sid){
   if (!sid) return "(none)";

@@ -364,7 +364,10 @@ def _forward_to_loop_sync(msg: dict) -> None:
     data = json.dumps({
         "id": msg.get("id"),
         "text": msg.get("text", ""),
+        "ts": msg.get("ts"),
+        "kind": msg.get("kind"),
         "session_id": meta.get("api_session") or "",
+        "attachments": meta.get("attachments") or [],  # the loop downloads them via /uploads/{name}
     }, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
         LOOP_INGEST_URL,
@@ -1013,6 +1016,37 @@ async def app_sessions_create(request: Request):
 async def app_sessions_patch(session_id: str, request: Request):
     check_auth(request)
     return loop_json(f"/loop/sessions/{urllib.parse.quote(session_id)}", method="PATCH", body=await request.json())
+
+# Generic pass-through so the PWA can reach every /loop/* endpoint of the API body
+# (persona, mcp, tools, test, ...) with the one shared secret. Only http://127.0.0.1
+# (LOOP_INGEST_URL's host) is ever contacted.
+
+@app.get("/app/loop/{path:path}")
+async def loop_proxy_get(request: Request, path: str):
+    check_auth(request)
+    return loop_json("/loop/" + path)
+
+
+@app.post("/app/loop/{path:path}")
+async def loop_proxy_post(request: Request, path: str):
+    check_auth(request)
+    raw = await request.body()
+    body = json.loads(raw) if raw else {}
+    return loop_json("/loop/" + path, method="POST", body=body)
+
+
+@app.patch("/app/loop/{path:path}")
+async def loop_proxy_patch(request: Request, path: str):
+    check_auth(request)
+    raw = await request.body()
+    body = json.loads(raw) if raw else {}
+    return loop_json("/loop/" + path, method="PATCH", body=body)
+
+
+@app.delete("/app/loop/{path:path}")
+async def loop_proxy_delete(request: Request, path: str):
+    check_auth(request)
+    return loop_json("/loop/" + path, method="DELETE")
 
 
 if __name__ == "__main__":

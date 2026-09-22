@@ -1,0 +1,16 @@
+{
+  "main_chain": [
+    { "url": "https://api.deepseek.com/v1", "key": "sk-...", "model": "deepseek-chat" },
+    { "url": "https://open.bigmodel.cn/api/paas/v4", "key": "...", "model": "glm-4.6" }
+  ],
+  "history_n": 24,
+  "history_images": 2,
+  "max_tool_steps": 8,
+  "vision": "auto",
+  "persona_file": "persona.md",
+  "attach_roots": [],
+  "mcp_servers": [
+    { "name": "demo", "transport": "stdio", "command": "python3", "args": ["mcp_demo_server.py"], "env": {}, "enabled": true },
+    { "name": "remote", "transport": "http", "url": "https://example.com/mcp", "headers": { "Authorization": "Bearer ..." }, "enabled": false }
+  ]
+}

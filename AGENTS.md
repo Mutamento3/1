@@ -48,7 +48,8 @@
 | 用户的大脑 | 走哪条路 | 怎么做 |
 |---|---|---|
 | **Claude Code**(CC,本地 agent) | 用仓库自带的 `channel/` 插件 | 跟着 [`channel/DEPLOY.md`](channel/DEPLOY.md):放文件、写 `~/.claude/channels/companion/.env`、注册 `.mcp.json`、启动带 `--dangerously-load-development-channels server:companion`。**会弹一个确认框,见 §4。** |
-| **GPT / DeepSeek / Gemini / GLM / Kimi / 通义 / 本地 vLLM / 任意 OpenAI 兼容 API** | **不要碰 `channel/`**,跑一个 bridge | 用 [`examples/bridge_any_llm.py`](examples/bridge_any_llm.py),见 §3。 |
+| **GPT / DeepSeek / Gemini / GLM / Kimi / 通义 / 本地 vLLM / 任意 OpenAI 兼容 API**,跑在用户电脑上 | **不要碰 `channel/`**,跑一个 bridge | 用 [`examples/bridge_any_llm.py`](examples/bridge_any_llm.py),见 §3。 |
+| 同上,但想**常驻在 VPS 上**,要看图、要 MCP 工具、要在手机设置页填 key/人格 | 跑 API 身体 | 用 [`examples/api_loop.py`](examples/api_loop.py),relay `/app/brain` 切到 `loop`;全部说明在 [`examples/README.md`](examples/README.md)。它已经把 §3.3 的三个「进阶」都做完了。 |
 | 其他自研 agent / 框架(LangChain、自己的 loop…) | 自己写薄薄一层 | 照 §3 的协议,把「调 LLM」那段换成你的逻辑即可。 |
 
 > **为什么 `channel/` 插件只给 Claude Code?** 它是 CC **专有**的 channel 机制(靠 `experimental:{'claude/channel':{}}` + `--dangerously-load-development-channels` 把外部消息**主动推进**会话)。GPT/Gemini/Codex 等没有这个概念,硬塞跑不起来。但它们都能用 §3 的 bridge——因为 relay 的协议是中立的 HTTP/SSE。
@@ -89,7 +90,7 @@ AI 侧本质就是个**「带工具的聊天」循环**(不是会自己乱跑的
 
 > Gemini 用它的 **OpenAI 兼容端点**(上表)就能直接接,不用改代码。其它任何「OpenAI 兼容」的中转/自建端点同理。
 
-### 3.3 进阶(可选,bridge 里留了扩展点)
+### 3.3 进阶(可选,bridge 里留了扩展点;`api_loop.py` 已全部实现,直接用它)
 
 - **多模型 fallback**:配一串端点,按错误码 `{401,403,404,429,500,502,503,504}` 顺次切——一个挂了自动下一个。(这是实战经验:中转站经常单点抽风。)
 - **工具调用**:模型若支持 function calling,可把 MCP/工具的 `tools` 喂进去,模型出 `tool_calls` 就执行再喂回,循环上限设 8 步,防止无限套娃。
@@ -157,6 +158,7 @@ WARNING: Loading development channels
 - [ ] AI 回复 → 手机几秒内出现气泡
 - [ ] 发一张图 → AI 侧能拿到(多模态模型能看图)
 - [ ] 关掉手机 PWA(后台)→ 再让 AI 回一条 → 锁屏收到推送(若配了 VAPID)
-- [ ] **安全**:`relay.env`/`*.pem`/`relay.db`/各种 API key 都没进 git;`RELAY_SECRET` 是新生成的、没复用别人的
+- [ ] （走 API 身体时）设置页「API · 模型」**保存并测试** 显示 ✓;发一张图模型能描述;加上 `mcp_demo_server.py` 后「把 3.5 和 4.25 加起来写成便签发给我」能看到 act 小卡和附件
+- [ ] **安全**:`relay.env`/`*.pem`/`relay.db`/`api_loop.config.json`/各种 API key 都没进 git;`RELAY_SECRET` 是新生成的、没复用别人的
 
 > 安全底线:`RELAY_SECRET` 泄露 = 任何人都能读全部对话、冒充任意一方。这是单用户模型,一把钥匙代表「就你和你的 AI」。详见各 `DEPLOY.md` 的「安全」节。

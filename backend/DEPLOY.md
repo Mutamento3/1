@@ -188,7 +188,7 @@ AI 侧默认是你电脑上的 Claude Code 加一个 **channel 插件**，它：
   - 普通回复：`{"type":"reply","text":"..."}`
   - 戳一戳：`{"type":"react","id":<目标消息id>,"emoji":"❤️"}`（空 emoji = 撤回这一戳）
 
-不用 Claude Code 时，跳过 `channel/`，直接跑 `examples/bridge_any_llm.py` 接任意 OpenAI-compatible API；想在 VPS 上常驻 API 身体，则用 `examples/api_loop.py` 并通过 `/app/brain` 切到 `loop`。完整决策树见仓库根的 `AGENTS.md` 和 `examples/README.md`。
+不用 Claude Code 时，跳过 `channel/`，直接跑 `examples/bridge_any_llm.py` 接任意 OpenAI-compatible API；想在 VPS 上常驻 API 身体，则用 `examples/api_loop.py` 并通过 `/app/brain` 切到 `loop`；relay 会把人类消息（含附件）POST 到 `RELAY_LOOP_INGEST_URL`，并把 `/app/loop/{path}` 透传到 loop 的 `/loop/{path}`（设置页就是靠这个填模型 / 人格 / MCP）。完整决策树见仓库根的 `AGENTS.md` 和 `examples/README.md`。
 
 ---
 

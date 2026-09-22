@@ -13,6 +13,10 @@ relay.db-*
 uploads/
 inbox/
 last_in_id
+# api_loop runtime state: keys, persona, downloaded attachments
+examples/api_loop.config.json
+examples/persona.md
+examples/loop_cache/
 
 # ── build / deps ────────────────────────────────────────────────────────
 node_modules/
